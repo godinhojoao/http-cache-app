@@ -1,0 +1,17 @@
+{
+  "name": "http-cache-app",
+  "version": "1.0.0",
+  "description": "NodeJS API to cache data using HTTP headers and theoretical explanation about it.",
+  "main": "src/index.js",
+  "type": "module",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "tests/index.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

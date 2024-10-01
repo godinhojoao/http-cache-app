@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cache Test</title>
+</head>
+
+<body>
+  <h1>Open the console to see if the data was retrieved from cache or not</h1>
+
+  <h2>Test Cache Routes</h2>
+  <button id="no-cache-btn">No Cache</button>
+  <button id="private-cache-btn">Private Cache</button>
+  <button id="public-cache-btn">Public Cache</button>
+  <button id="etag-cache-btn">ETag Cache</button>
+  <button id="last-modified-cache-btn">Last Modified Cache</button>
+
+  <h2>Response:</h2>
+  <p class="response"></p>
+
+  <h2>Send Custom Last-Modified Value</h2>
+  <input type="datetime-local" id="custom-last-modified" />
+  <button id="send-custom-last-modified-btn">Send Custom Last-Modified</button>
+
+  <script>
+    const responseDisplay = document.querySelector('.response');
+    let lastModified; // Store Last-Modified value for future requests
+    let etag; // Store ETag value for future requests
+
+    // Function to fetch data from a specific route
+    async function fetchData(route, customLastModified = null) {
+      try {
+        const headers = {};
+
+        // Use custom Last-Modified if provided
+        if (customLastModified) {
+          headers['If-Modified-Since'] = customLastModified; // Include Last-Modified if provided
+        } else if (route === '/last-modified-cache' && lastModified) {
+          headers['If-Modified-Since'] = lastModified; // Include Last-Modified if available
+        }
+
+        // Add If-None-Match header for ETag cache
+        if (route === '/etag-cache' && etag) {
+          headers['If-None-Match'] = etag; // Include ETag if available
+        }
+
+        const res = await fetch(`http://localhost:8080${route}`, {
+          method: 'GET',
+          headers: headers
+        });
+
+        if (res.status === 304) {
+          responseDisplay.innerHTML = 'Cached response, no new data. res.status 304';
+          return;
+        }
+
+        const data = await res.json();
+        lastModified = res.headers.get('Last-Modified'); // Update Last-Modified value
+        etag = res.headers.get('ETag'); // Update ETag value
+
+        // Update input field with Last-Modified value
+        document.getElementById('custom-last-modified').value = new Date(lastModified).toISOString().slice(0, 16);
+
+        data.status = res.status;
+        responseDisplay.innerHTML = JSON.stringify(data);
+        console.log(`Response from ${route}:`, data);
+      } catch (error) {
+        console.error('Error:', error);
+        responseDisplay.innerHTML = 'Error fetching data';
+      }
+    }
+
+    // Set up button event listeners
+    document.getElementById('no-cache-btn').addEventListener('click', () => fetchData('/no-cache'));
+    document.getElementById('private-cache-btn').addEventListener('click', () => fetchData('/private-cache'));
+    document.getElementById('public-cache-btn').addEventListener('click', () => fetchData('/public-cache'));
+    document.getElementById('etag-cache-btn').addEventListener('click', () => fetchData('/etag-cache'));
+    document.getElementById('last-modified-cache-btn').addEventListener('click', () => fetchData('/last-modified-cache'));
+
+    // Handle custom Last-Modified value submission
+    document.getElementById('send-custom-last-modified-btn').addEventListener('click', () => {
+      const customLastModified = document.getElementById('custom-last-modified').value;
+      fetchData('/last-modified-cache', customLastModified);
+    });
+  </script>
+
+</body>
+
+</html>
